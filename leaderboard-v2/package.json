@@ -1,0 +1,16 @@
+{
+  "name": "educational-game-leaderboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public",
+    "d1:create": "wrangler d1 create educational-game-leaderboard",
+    "d1:migrate:local": "wrangler d1 migrations apply educational-game-leaderboard --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply educational-game-leaderboard --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^4.24.0"
+  }
+}

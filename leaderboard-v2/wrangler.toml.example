@@ -1,0 +1,11 @@
+name = "educational-game-leaderboard"
+compatibility_date = "2026-07-01"
+pages_build_output_dir = "./public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "educational-game-leaderboard"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+# Set API_SECRET as a Pages/Workers secret, not here:
+# wrangler pages secret put API_SECRET
