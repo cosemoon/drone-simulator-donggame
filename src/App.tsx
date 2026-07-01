@@ -17,7 +17,7 @@ import {
 } from "./game/leaderboard";
 import {
   createOnlineScorePayload,
-  normalizeScoreboardBaseUrl,
+  resolveScoreboardBaseUrl,
   submitOnlineScore,
 } from "./game/onlineScore";
 import {
@@ -123,7 +123,7 @@ function App() {
   const controlsRef = useRef<GameCanvasControls | null>(null);
   const previousStatusRef = useRef<GameSnapshot["status"] | null>(null);
   const scoreboardBaseUrl = useMemo(
-    () => normalizeScoreboardBaseUrl(import.meta.env.VITE_SCOREBOARD_API_BASE_URL),
+    () => resolveScoreboardBaseUrl(import.meta.env.VITE_SCOREBOARD_API_BASE_URL),
     [],
   );
   const [settings, setSettings] = useState<GameSettings>(() =>

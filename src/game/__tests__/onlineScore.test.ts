@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   clearTimeMsToScore,
   createOnlineScorePayload,
+  DEFAULT_SCOREBOARD_BASE_URL,
   normalizeScoreboardBaseUrl,
+  resolveScoreboardBaseUrl,
 } from "../onlineScore";
 import type { PlayerProfile, RaceResult } from "../types";
 
@@ -67,5 +69,14 @@ describe("online score helpers", () => {
     );
     expect(normalizeScoreboardBaseUrl("")).toBeNull();
     expect(normalizeScoreboardBaseUrl("not a url")).toBeNull();
+  });
+
+  it("uses the public scoreboard as a fallback when Cloudflare env is missing", () => {
+    expect(resolveScoreboardBaseUrl(undefined)).toBe(DEFAULT_SCOREBOARD_BASE_URL);
+    expect(resolveScoreboardBaseUrl("")).toBe(DEFAULT_SCOREBOARD_BASE_URL);
+    expect(resolveScoreboardBaseUrl("not a url")).toBe(DEFAULT_SCOREBOARD_BASE_URL);
+    expect(resolveScoreboardBaseUrl("https://custom-scoreboard.pages.dev/api/leaderboard")).toBe(
+      "https://custom-scoreboard.pages.dev",
+    );
   });
 });

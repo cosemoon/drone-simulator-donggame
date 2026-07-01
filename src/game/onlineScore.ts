@@ -21,6 +21,9 @@ export interface OnlineScoreResponse {
 
 const MAX_SCORE = 999_999;
 
+export const DEFAULT_SCOREBOARD_BASE_URL =
+  "https://drone-simulator-donggame-online-scoreboard.pages.dev";
+
 export function clearTimeMsToScore(clearTimeMs: number): number {
   const safeTime = Number.isFinite(clearTimeMs)
     ? Math.max(0, Math.round(clearTimeMs))
@@ -87,6 +90,10 @@ export function normalizeScoreboardBaseUrl(value: string | undefined): string | 
   } catch {
     return null;
   }
+}
+
+export function resolveScoreboardBaseUrl(value: string | undefined): string {
+  return normalizeScoreboardBaseUrl(value) ?? DEFAULT_SCOREBOARD_BASE_URL;
 }
 
 export async function submitOnlineScore(
