@@ -60,6 +60,8 @@ export interface RaceResultInjection {
   buildVersion?: string;
   courseVersion?: string;
   themeId: ThemeId;
+  hoverAssistEnabled?: boolean;
+  maxSpeedMetersPerSecond?: number;
 }
 
 function sortByGateOrder(a: Gate, b: Gate): number {
@@ -432,6 +434,11 @@ export function toRaceResult(
     courseId: state.courseId,
     courseVersion: injection.courseVersion ?? state.courseVersion,
     themeId: injection.themeId,
+    hoverAssistEnabled:
+      injection.hoverAssistEnabled ?? defaultSimulationConfig.hoverAssistEnabled,
+    maxSpeedMetersPerSecond:
+      injection.maxSpeedMetersPerSecond ??
+      defaultSimulationConfig.drone.maxSpeedMetersPerSecond,
     elapsedMs: state.elapsedMs,
     penaltyMs: state.penaltyMs,
     finalMs: state.finalMs,

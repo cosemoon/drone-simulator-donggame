@@ -14,6 +14,7 @@ export type {
   HexColor,
   InputCommand,
   PenaltyConfig,
+  PlayerProfile,
   RaceResult,
   SimulationConfig,
   ThemeColors,
@@ -27,6 +28,7 @@ export * from "./gateMath";
 export { gameThemeById, gameThemes } from "./themes";
 export * from "./flight";
 export * from "./input";
+export * from "./onlineScore";
 export * from "./race";
 export * from "./camera";
 export * from "./engine";
@@ -34,7 +36,11 @@ export * from "./scene";
 export type { GameSettings, GameStorage, StorageLike } from "./storage";
 export {
   DEFAULT_GAME_SETTINGS,
+  DEFAULT_MAX_SPEED_METERS_PER_SECOND,
   DEFAULT_NICKNAME,
+  DEFAULT_PLAYER_PROFILE,
+  MAX_MAX_SPEED_METERS_PER_SECOND,
+  MIN_MAX_SPEED_METERS_PER_SECOND,
   STORAGE_KEYS,
   STORAGE_NAMESPACE,
   STORAGE_VERSION,
@@ -43,11 +49,15 @@ export {
   createMemoryStorage,
   createStorageAdapter,
   loadNickname,
+  loadPlayerProfile,
   loadSettings,
   readJsonValue,
+  sanitizeMaxSpeed,
   sanitizeNickname,
+  sanitizePlayerProfile,
   sanitizeSettings,
   saveNickname,
+  savePlayerProfile,
   saveSettings,
   writeJsonValue,
 } from "./storage";

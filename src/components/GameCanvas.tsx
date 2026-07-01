@@ -11,6 +11,7 @@ export interface GameCanvasControls {
   setCameraMode(mode: CameraMode): void;
   setThemeId(themeId: ThemeId): void;
   setHoverAssistEnabled(enabled: boolean): void;
+  setMaxSpeedMetersPerSecond(value: number): void;
   setInputEnabled(enabled: boolean): void;
   setTouchSticks(
     sticks: VirtualStickCommandInput,
@@ -23,6 +24,7 @@ export interface GameCanvasProps {
   themeId: ThemeId;
   cameraMode: CameraMode;
   hoverAssistEnabled: boolean;
+  maxSpeedMetersPerSecond: number;
   inputBlocked?: boolean;
   onSnapshot?: (snapshot: GameSnapshot) => void;
   onControlsReady?: (controls: GameCanvasControls | null) => void;
@@ -38,6 +40,8 @@ function controlsFor(engine: GameEngine): GameCanvasControls {
     setCameraMode: (mode) => engine.setCameraMode(mode),
     setThemeId: (themeId) => engine.setThemeId(themeId),
     setHoverAssistEnabled: (enabled) => engine.setHoverAssistEnabled(enabled),
+    setMaxSpeedMetersPerSecond: (value) =>
+      engine.setMaxSpeedMetersPerSecond(value),
     setInputEnabled: (enabled) => engine.setInputEnabled(enabled),
     setTouchSticks: (sticks, options) => engine.setTouchSticks(sticks, options),
     clearTouchSticks: () => engine.clearTouchSticks(),
@@ -48,6 +52,7 @@ export function GameCanvas({
   themeId,
   cameraMode,
   hoverAssistEnabled,
+  maxSpeedMetersPerSecond,
   inputBlocked = false,
   onSnapshot,
   onControlsReady,
@@ -58,6 +63,7 @@ export function GameCanvas({
   const themeIdRef = useRef(themeId);
   const cameraModeRef = useRef(cameraMode);
   const hoverAssistEnabledRef = useRef(hoverAssistEnabled);
+  const maxSpeedMetersPerSecondRef = useRef(maxSpeedMetersPerSecond);
   const onSnapshotRef = useRef(onSnapshot);
   const onControlsReadyRef = useRef(onControlsReady);
   const onErrorRef = useRef(onError);
@@ -77,6 +83,11 @@ export function GameCanvas({
     hoverAssistEnabledRef.current = hoverAssistEnabled;
     engineRef.current?.setHoverAssistEnabled(hoverAssistEnabled);
   }, [hoverAssistEnabled]);
+
+  useEffect(() => {
+    maxSpeedMetersPerSecondRef.current = maxSpeedMetersPerSecond;
+    engineRef.current?.setMaxSpeedMetersPerSecond(maxSpeedMetersPerSecond);
+  }, [maxSpeedMetersPerSecond]);
 
   useEffect(() => {
     onSnapshotRef.current = onSnapshot;
@@ -117,6 +128,7 @@ export function GameCanvas({
         themeId: themeIdRef.current,
         cameraMode: cameraModeRef.current,
         hoverAssistEnabled: hoverAssistEnabledRef.current,
+        maxSpeedMetersPerSecond: maxSpeedMetersPerSecondRef.current,
       });
       engineRef.current = engine;
       engine.setInputEnabled(!inputBlocked);

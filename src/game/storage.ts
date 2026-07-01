@@ -1,5 +1,5 @@
 import { gameThemeById } from "./themes";
-import type { CameraMode, ThemeId } from "./types";
+import type { CameraMode, PlayerProfile, ThemeId } from "./types";
 
 export interface StorageLike {
   getItem(key: string): string | null;
@@ -11,6 +11,7 @@ export interface GameSettings {
   themeId: ThemeId;
   cameraMode: CameraMode;
   hoverAssistEnabled: boolean;
+  maxSpeedMetersPerSecond: number;
   touchControlsEnabled: boolean;
   reducedMotion: boolean;
 }
@@ -21,15 +22,28 @@ export const STORAGE_NAMESPACE = `drone-time-attack:${STORAGE_VERSION}`;
 export const STORAGE_KEYS = {
   nickname: `${STORAGE_NAMESPACE}:nickname`,
   settings: `${STORAGE_NAMESPACE}:settings`,
+  playerProfile: `${STORAGE_NAMESPACE}:player-profile`,
   localLeaderboard: `${STORAGE_NAMESPACE}:local-leaderboard`,
 } as const;
 
 export const DEFAULT_NICKNAME = "Pilot";
+export const DEFAULT_MAX_SPEED_METERS_PER_SECOND = 12;
+export const MIN_MAX_SPEED_METERS_PER_SECOND = 4;
+export const MAX_MAX_SPEED_METERS_PER_SECOND = 18;
+
+export const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
+  school: "",
+  grade: "",
+  classNumber: "",
+  studentNumber: "",
+  nickname: DEFAULT_NICKNAME,
+};
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   themeId: "high-contrast",
   cameraMode: "chase",
   hoverAssistEnabled: true,
+  maxSpeedMetersPerSecond: DEFAULT_MAX_SPEED_METERS_PER_SECOND,
   touchControlsEnabled: true,
   reducedMotion: false,
 };
@@ -179,6 +193,54 @@ export function sanitizeNickname(value: unknown): string {
   return trimmed.slice(0, nicknameMaxLength);
 }
 
+function sanitizeTextField(value: unknown, maxLength: number): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().replace(/\s+/g, " ").slice(0, maxLength);
+}
+
+function sanitizeDigitsField(value: unknown, maxLength: number): string {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return "";
+  }
+
+  return String(value).replace(/\D+/g, "").slice(0, maxLength);
+}
+
+export function sanitizeMaxSpeed(value: unknown): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_MAX_SPEED_METERS_PER_SECOND;
+  }
+
+  return Math.min(
+    MAX_MAX_SPEED_METERS_PER_SECOND,
+    Math.max(MIN_MAX_SPEED_METERS_PER_SECOND, parsed),
+  );
+}
+
+export function sanitizePlayerProfile(value: unknown): PlayerProfile {
+  if (!isRecord(value)) {
+    return { ...DEFAULT_PLAYER_PROFILE };
+  }
+
+  return {
+    school: sanitizeTextField(value.school, 30),
+    grade: sanitizeDigitsField(value.grade, 2),
+    classNumber: sanitizeDigitsField(value.classNumber, 2),
+    studentNumber: sanitizeDigitsField(value.studentNumber, 3),
+    nickname: sanitizeNickname(value.nickname),
+  };
+}
+
 export function loadNickname(
   storage: StorageLike = createStorageAdapter(),
 ): string {
@@ -208,6 +270,7 @@ export function sanitizeSettings(value: unknown): GameSettings {
       typeof value.hoverAssistEnabled === "boolean"
         ? value.hoverAssistEnabled
         : DEFAULT_GAME_SETTINGS.hoverAssistEnabled,
+    maxSpeedMetersPerSecond: sanitizeMaxSpeed(value.maxSpeedMetersPerSecond),
     touchControlsEnabled:
       typeof value.touchControlsEnabled === "boolean"
         ? value.touchControlsEnabled
@@ -232,9 +295,35 @@ export function saveSettings(
   writeJsonValue(storage, STORAGE_KEYS.settings, sanitizeSettings(settings));
 }
 
+export function loadPlayerProfile(
+  storage: StorageLike = createStorageAdapter(),
+): PlayerProfile {
+  const storedProfile = sanitizePlayerProfile(
+    readJsonValue(storage, STORAGE_KEYS.playerProfile),
+  );
+  const legacyNickname = loadNickname(storage);
+
+  return {
+    ...storedProfile,
+    nickname:
+      storedProfile.nickname === DEFAULT_NICKNAME ? legacyNickname : storedProfile.nickname,
+  };
+}
+
+export function savePlayerProfile(
+  profile: PlayerProfile,
+  storage: StorageLike = createStorageAdapter(),
+): void {
+  const sanitized = sanitizePlayerProfile(profile);
+  writeJsonValue(storage, STORAGE_KEYS.playerProfile, sanitized);
+  saveNickname(sanitized.nickname, storage);
+}
+
 export interface GameStorage {
   loadNickname(): string;
   saveNickname(nickname: string): void;
+  loadPlayerProfile(): PlayerProfile;
+  savePlayerProfile(profile: PlayerProfile): void;
   loadSettings(): GameSettings;
   saveSettings(settings: GameSettings): void;
 }
@@ -245,6 +334,8 @@ export function createGameStorage(
   return {
     loadNickname: () => loadNickname(storage),
     saveNickname: (nickname) => saveNickname(nickname, storage),
+    loadPlayerProfile: () => loadPlayerProfile(storage),
+    savePlayerProfile: (profile) => savePlayerProfile(profile, storage),
     loadSettings: () => loadSettings(storage),
     saveSettings: (settings) => saveSettings(settings, storage),
   };

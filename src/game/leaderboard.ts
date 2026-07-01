@@ -1,5 +1,6 @@
 import { gameThemeById } from "./themes";
 import {
+  DEFAULT_MAX_SPEED_METERS_PER_SECOND,
   STORAGE_KEYS,
   createStorageAdapter,
   readJsonValue,
@@ -29,6 +30,16 @@ function isThemeId(value: unknown): value is ThemeId {
 
 function isFiniteNonNegativeNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function optionalHoverAssistEnabled(value: unknown): boolean {
+  return typeof value === "boolean" ? value : true;
+}
+
+function optionalMaxSpeedMetersPerSecond(value: unknown): number {
+  return isFiniteNonNegativeNumber(value)
+    ? value
+    : DEFAULT_MAX_SPEED_METERS_PER_SECOND;
 }
 
 function isNonNegativeInteger(value: unknown): value is number {
@@ -84,6 +95,10 @@ export function sanitizeRaceResult(value: unknown): RaceResult | null {
     courseId: value.courseId.trim(),
     courseVersion: value.courseVersion.trim(),
     themeId: value.themeId,
+    hoverAssistEnabled: optionalHoverAssistEnabled(value.hoverAssistEnabled),
+    maxSpeedMetersPerSecond: optionalMaxSpeedMetersPerSecond(
+      value.maxSpeedMetersPerSecond,
+    ),
     elapsedMs: value.elapsedMs,
     penaltyMs: value.penaltyMs,
     finalMs: value.finalMs,

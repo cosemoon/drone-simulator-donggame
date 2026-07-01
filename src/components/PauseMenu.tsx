@@ -1,5 +1,9 @@
 import { Play, RotateCcw } from "lucide-react";
 import type { GameSnapshot } from "../game/engine";
+import {
+  MAX_MAX_SPEED_METERS_PER_SECOND,
+  MIN_MAX_SPEED_METERS_PER_SECOND,
+} from "../game/storage";
 import type { CameraMode, ThemeId } from "../game/types";
 
 export interface PauseMenuProps {
@@ -8,15 +12,17 @@ export interface PauseMenuProps {
   themeId: ThemeId;
   cameraMode: CameraMode;
   hoverAssistEnabled: boolean;
+  maxSpeedMetersPerSecond: number;
   onThemeChange: (themeId: ThemeId) => void;
   onCameraModeChange: (cameraMode: CameraMode) => void;
   onHoverAssistChange: (enabled: boolean) => void;
+  onMaxSpeedChange: (value: number) => void;
   onResume: () => void;
   onRestart: () => void;
 }
 
 const themeOptions = [
-  { id: "clean-sim", label: "A", detail: "클린 시뮬레이터" },
+  { id: "clean-sim", label: "A", detail: "클린 시뮬레이션" },
   { id: "neon-night", label: "B", detail: "네온 나이트" },
   { id: "high-contrast", label: "C", detail: "하이 콘트라스트" },
 ] as const satisfies readonly {
@@ -36,15 +42,19 @@ export function PauseMenu({
   themeId,
   cameraMode,
   hoverAssistEnabled,
+  maxSpeedMetersPerSecond,
   onThemeChange,
   onCameraModeChange,
   onHoverAssistChange,
+  onMaxSpeedChange,
   onResume,
   onRestart,
 }: PauseMenuProps) {
   if (!open) {
     return null;
   }
+
+  const roundedMaxSpeed = Math.round(maxSpeedMetersPerSecond);
 
   return (
     <div className="menu-scrim" role="presentation">
@@ -103,13 +113,36 @@ export function PauseMenu({
           <legend>비행 보조</legend>
           <label className="toggle-row">
             <span>
-              <strong>호버링</strong>
-              <small>중립 스로틀에서 고도를 유지합니다</small>
+              <strong>호버 모드</strong>
+              <small>중립 스로틀에서 고도를 유지합니다.</small>
             </span>
             <input
               type="checkbox"
               checked={hoverAssistEnabled}
               onChange={(event) => onHoverAssistChange(event.currentTarget.checked)}
+            />
+          </label>
+          <label className="range-row">
+            <span>
+              <strong>최대 속도</strong>
+              <small>{roundedMaxSpeed} m/s</small>
+            </span>
+            <input
+              type="range"
+              min={MIN_MAX_SPEED_METERS_PER_SECOND}
+              max={MAX_MAX_SPEED_METERS_PER_SECOND}
+              step="1"
+              value={roundedMaxSpeed}
+              onChange={(event) => onMaxSpeedChange(Number(event.currentTarget.value))}
+            />
+            <input
+              type="number"
+              min={MIN_MAX_SPEED_METERS_PER_SECOND}
+              max={MAX_MAX_SPEED_METERS_PER_SECOND}
+              step="1"
+              value={roundedMaxSpeed}
+              aria-label="최대 속도"
+              onChange={(event) => onMaxSpeedChange(Number(event.currentTarget.value))}
             />
           </label>
         </fieldset>

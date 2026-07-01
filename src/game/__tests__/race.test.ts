@@ -233,6 +233,8 @@ describe("race penalties and results", () => {
       courseId: "test-course",
       courseVersion: "test-course-version",
       themeId: "neon-night",
+      hoverAssistEnabled: true,
+      maxSpeedMetersPerSecond: defaultSimulationConfig.drone.maxSpeedMetersPerSecond,
       elapsedMs: 2_000,
       penaltyMs: expectedPenaltyMs,
       finalMs: 2_000 + expectedPenaltyMs,

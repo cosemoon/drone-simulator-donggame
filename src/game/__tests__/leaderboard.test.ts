@@ -18,6 +18,8 @@ function raceResult(overrides: Partial<RaceResult> = {}): RaceResult {
     courseId: "training-arena-01",
     courseVersion: "2026.06.30",
     themeId: "high-contrast",
+    hoverAssistEnabled: true,
+    maxSpeedMetersPerSecond: 12,
     elapsedMs,
     penaltyMs,
     finalMs,

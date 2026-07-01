@@ -16,6 +16,12 @@ import {
   type LocalLeaderboard,
 } from "./game/leaderboard";
 import {
+  createOnlineScorePayload,
+  normalizeScoreboardBaseUrl,
+  submitOnlineScore,
+} from "./game/onlineScore";
+import {
+  sanitizeMaxSpeed,
   createBrowserStorageAdapter,
   createGameStorage,
   type GameSettings,
@@ -23,7 +29,7 @@ import {
   type StorageLike,
 } from "./game/storage";
 import { gameThemeById } from "./game/themes";
-import type { RaceResult, ThemeId } from "./game/types";
+import type { PlayerProfile, RaceResult, ThemeId } from "./game/types";
 
 interface PersistenceBundle {
   storage: StorageLike;
@@ -32,6 +38,18 @@ interface PersistenceBundle {
 }
 
 type HudStyle = CSSProperties & Record<`--${string}`, string>;
+
+type OnlineSubmitStatus = "idle" | "submitting" | "success" | "error";
+
+interface OnlineSubmitState {
+  status: OnlineSubmitStatus;
+  message: string;
+}
+
+const initialOnlineSubmitState: OnlineSubmitState = {
+  status: "idle",
+  message: "",
+};
 
 function usePersistenceBundle(): PersistenceBundle {
   const bundleRef = useRef<PersistenceBundle | null>(null);
@@ -50,9 +68,11 @@ function usePersistenceBundle(): PersistenceBundle {
 
 function createRaceResultFromSnapshot(
   snapshot: GameSnapshot,
-  nickname: string,
+  profile: PlayerProfile,
+  settings: GameSettings,
 ): RaceResult {
   const completedAt = new Date().toISOString();
+  const nickname = profile.nickname.trim() || "Pilot";
 
   return {
     id: `${trainingArenaCourse.id}-${completedAt}-${Math.round(snapshot.finalMs)}`,
@@ -60,6 +80,8 @@ function createRaceResultFromSnapshot(
     courseId: trainingArenaCourse.id,
     courseVersion: trainingArenaCourse.version,
     themeId: snapshot.themeId,
+    hoverAssistEnabled: settings.hoverAssistEnabled,
+    maxSpeedMetersPerSecond: settings.maxSpeedMetersPerSecond,
     elapsedMs: snapshot.elapsedMs,
     penaltyMs: snapshot.penaltyMs,
     finalMs: snapshot.finalMs,
@@ -100,14 +122,23 @@ function App() {
   const { gameStorage, leaderboard } = usePersistenceBundle();
   const controlsRef = useRef<GameCanvasControls | null>(null);
   const previousStatusRef = useRef<GameSnapshot["status"] | null>(null);
+  const scoreboardBaseUrl = useMemo(
+    () => normalizeScoreboardBaseUrl(import.meta.env.VITE_SCOREBOARD_API_BASE_URL),
+    [],
+  );
   const [settings, setSettings] = useState<GameSettings>(() =>
     gameStorage.loadSettings(),
   );
-  const [nickname] = useState(() => gameStorage.loadNickname());
+  const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(() =>
+    gameStorage.loadPlayerProfile(),
+  );
   const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pauseMenuOpen, setPauseMenuOpen] = useState(false);
   const [latestResult, setLatestResult] = useState<RaceResult | null>(null);
+  const [onlineSubmit, setOnlineSubmit] = useState<OnlineSubmitState>(
+    initialOnlineSubmitState,
+  );
   const [records, setRecords] = useState<RaceResult[]>(() =>
     leaderboard.topResults(trainingArenaCourse.id, 5),
   );
@@ -134,8 +165,14 @@ function App() {
       controls?.setThemeId(settings.themeId);
       controls?.setCameraMode(settings.cameraMode);
       controls?.setHoverAssistEnabled(settings.hoverAssistEnabled);
+      controls?.setMaxSpeedMetersPerSecond(settings.maxSpeedMetersPerSecond);
     },
-    [settings.cameraMode, settings.hoverAssistEnabled, settings.themeId],
+    [
+      settings.cameraMode,
+      settings.hoverAssistEnabled,
+      settings.maxSpeedMetersPerSecond,
+      settings.themeId,
+    ],
   );
 
   const refreshRecords = useCallback(() => {
@@ -154,10 +191,15 @@ function App() {
         nextSnapshot.status === "finished" &&
         previousStatusRef.current !== "finished"
       ) {
-        const result = createRaceResultFromSnapshot(nextSnapshot, nickname);
+        const result = createRaceResultFromSnapshot(
+          nextSnapshot,
+          playerProfile,
+          settings,
+        );
         const nextRecords = leaderboard.addResult(result).slice(0, 5);
         setLatestResult(result);
         setRecords(nextRecords);
+        setOnlineSubmit(initialOnlineSubmitState);
         setPauseMenuOpen(false);
       }
 
@@ -166,6 +208,7 @@ function App() {
         previousStatusRef.current === "finished"
       ) {
         setLatestResult(null);
+        setOnlineSubmit(initialOnlineSubmitState);
         refreshRecords();
       }
 
@@ -175,7 +218,13 @@ function App() {
 
       previousStatusRef.current = nextSnapshot.status;
     },
-    [leaderboard, nickname, refreshRecords, settings.cameraMode, updateSettings],
+    [
+      leaderboard,
+      playerProfile,
+      refreshRecords,
+      settings,
+      updateSettings,
+    ],
   );
 
   const openPauseMenu = useCallback(() => {
@@ -191,6 +240,7 @@ function App() {
   const restartGame = useCallback(() => {
     setPauseMenuOpen(false);
     setLatestResult(null);
+    setOnlineSubmit(initialOnlineSubmitState);
     previousStatusRef.current = null;
     controlsRef.current?.restart();
     refreshRecords();
@@ -223,6 +273,64 @@ function App() {
     },
     [updateSettings],
   );
+
+  const changeMaxSpeed = useCallback(
+    (maxSpeedMetersPerSecond: number) => {
+      const sanitized = sanitizeMaxSpeed(maxSpeedMetersPerSecond);
+      updateSettings({ maxSpeedMetersPerSecond: sanitized });
+      controlsRef.current?.setMaxSpeedMetersPerSecond(sanitized);
+    },
+    [updateSettings],
+  );
+
+  const handlePlayerProfileChange = useCallback(
+    (profile: PlayerProfile) => {
+      setPlayerProfile(profile);
+      gameStorage.savePlayerProfile(profile);
+      setOnlineSubmit(initialOnlineSubmitState);
+    },
+    [gameStorage],
+  );
+
+  const submitBestScore = useCallback(async () => {
+    const bestResult = records[0] ?? latestResult;
+
+    if (!bestResult) {
+      setOnlineSubmit({
+        status: "error",
+        message: "제출할 완주 기록이 없습니다.",
+      });
+      return;
+    }
+
+    if (!scoreboardBaseUrl) {
+      setOnlineSubmit({
+        status: "error",
+        message: "온라인 점수판 주소가 아직 설정되지 않았습니다.",
+      });
+      return;
+    }
+
+    try {
+      const payload = createOnlineScorePayload(playerProfile, bestResult);
+      setOnlineSubmit({ status: "submitting", message: "최고 기록 제출 중..." });
+      const response = await submitOnlineScore(scoreboardBaseUrl, payload);
+      setOnlineSubmit({
+        status: "success",
+        message: response.updated
+          ? "온라인 점수판에 최고 기록을 저장했습니다."
+          : "온라인 점수판의 기존 최고 기록이 더 좋습니다.",
+      });
+    } catch (error) {
+      setOnlineSubmit({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "온라인 점수 제출에 실패했습니다.",
+      });
+    }
+  }, [latestResult, playerProfile, records, scoreboardBaseUrl]);
 
   const inputBlocked = shouldBlockGameInput(pauseMenuOpen, snapshot?.status);
 
@@ -280,6 +388,7 @@ function App() {
         themeId={settings.themeId}
         cameraMode={settings.cameraMode}
         hoverAssistEnabled={settings.hoverAssistEnabled}
+        maxSpeedMetersPerSecond={settings.maxSpeedMetersPerSecond}
         inputBlocked={inputBlocked}
         onSnapshot={handleSnapshot}
         onControlsReady={handleControlsReady}
@@ -302,9 +411,11 @@ function App() {
         themeId={settings.themeId}
         cameraMode={settings.cameraMode}
         hoverAssistEnabled={settings.hoverAssistEnabled}
+        maxSpeedMetersPerSecond={settings.maxSpeedMetersPerSecond}
         onThemeChange={changeTheme}
         onCameraModeChange={changeCameraMode}
         onHoverAssistChange={changeHoverAssist}
+        onMaxSpeedChange={changeMaxSpeed}
         onResume={resumeGame}
         onRestart={restartGame}
       />
@@ -312,6 +423,11 @@ function App() {
         open={snapshot?.status === "finished"}
         result={latestResult}
         records={records}
+        playerProfile={playerProfile}
+        onlineSubmit={onlineSubmit}
+        scoreboardEnabled={Boolean(scoreboardBaseUrl)}
+        onPlayerProfileChange={handlePlayerProfileChange}
+        onSubmitBestScore={submitBestScore}
         onRestart={restartGame}
       />
     </main>

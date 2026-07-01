@@ -17,12 +17,22 @@ export interface InputCommand {
 
 export type ThemeId = "clean-sim" | "neon-night" | "high-contrast";
 
+export interface PlayerProfile {
+  school: string;
+  grade: string;
+  classNumber: string;
+  studentNumber: string;
+  nickname: string;
+}
+
 export interface RaceResult {
   id: string;
   nickname: string;
   courseId: string;
   courseVersion: string;
   themeId: ThemeId;
+  hoverAssistEnabled: boolean;
+  maxSpeedMetersPerSecond: number;
   elapsedMs: number;
   penaltyMs: number;
   finalMs: number;
@@ -104,6 +114,7 @@ export interface DroneConfig {
   angularDrag: number;
   angularResponse: AngularResponseConfig;
   maxTiltDegrees: number;
+  maxSpeedMetersPerSecond: number;
   brakeDragMultiplier: number;
 }
 

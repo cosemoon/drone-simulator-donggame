@@ -27,6 +27,9 @@ describe("storage keys", () => {
   it("uses a v1 namespace for nickname, settings, and local leaderboard", () => {
     expect(STORAGE_KEYS.nickname).toBe("drone-time-attack:v1:nickname");
     expect(STORAGE_KEYS.settings).toBe("drone-time-attack:v1:settings");
+    expect(STORAGE_KEYS.playerProfile).toBe(
+      "drone-time-attack:v1:player-profile",
+    );
     expect(STORAGE_KEYS.localLeaderboard).toBe(
       "drone-time-attack:v1:local-leaderboard",
     );
@@ -66,6 +69,7 @@ describe("createGameStorage", () => {
         cameraMode: "side",
         touchControlsEnabled: "yes",
         hoverAssistEnabled: false,
+        maxSpeedMetersPerSecond: 10,
         reducedMotion: true,
       }),
     });
@@ -75,7 +79,29 @@ describe("createGameStorage", () => {
       ...DEFAULT_GAME_SETTINGS,
       themeId: "neon-night",
       hoverAssistEnabled: false,
+      maxSpeedMetersPerSecond: 10,
       reducedMotion: true,
+    });
+  });
+
+  it("persists a sanitized player profile for online score submission", () => {
+    const storage = createMemoryStorage();
+    const gameStorage = createGameStorage(storage);
+
+    gameStorage.savePlayerProfile({
+      school: "  하늘초  ",
+      grade: "5학년",
+      classNumber: "2반",
+      studentNumber: "14번",
+      nickname: "  민준  ",
+    });
+
+    expect(gameStorage.loadPlayerProfile()).toEqual({
+      school: "하늘초",
+      grade: "5",
+      classNumber: "2",
+      studentNumber: "14",
+      nickname: "민준",
     });
   });
 

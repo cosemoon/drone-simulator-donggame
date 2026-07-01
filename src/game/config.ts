@@ -36,6 +36,7 @@ export const defaultSimulationConfig: SimulationConfig = {
       roll: 7.8,
     },
     maxTiltDegrees: 40,
+    maxSpeedMetersPerSecond: 12,
     brakeDragMultiplier: 3.2,
   },
   assist: {

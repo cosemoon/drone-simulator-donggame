@@ -346,6 +346,17 @@ function applyDrag(
   ];
 }
 
+function applySpeedLimit(velocity: Vector3Tuple, drone: DroneConfig): Vector3Tuple {
+  const maxSpeed = Math.max(0, finiteNumber(drone.maxSpeedMetersPerSecond));
+  const speed = Math.hypot(velocity[0], velocity[1], velocity[2]);
+
+  if (maxSpeed <= 0 || speed <= maxSpeed) {
+    return velocity;
+  }
+
+  return scaleVector(velocity, maxSpeed / speed);
+}
+
 function integrateVelocity(
   state: DroneFlightState,
   command: InputCommand,
@@ -370,7 +381,10 @@ function integrateVelocity(
     scaleVector(acceleration, deltaSeconds),
   );
 
-  return applyDrag(accelerated, config.drone, command.brake, deltaSeconds);
+  return applySpeedLimit(
+    applyDrag(accelerated, config.drone, command.brake, deltaSeconds),
+    config.drone,
+  );
 }
 
 function integratePosition(

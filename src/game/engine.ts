@@ -67,6 +67,7 @@ export interface GameEngineOptions {
   themeId?: ThemeId;
   cameraMode?: CameraMode;
   hoverAssistEnabled?: boolean;
+  maxSpeedMetersPerSecond?: number;
   snapshotIntervalMs?: number;
 }
 
@@ -144,6 +145,12 @@ export class GameEngine {
     this.theme = activeThemeFor(options.themeId ?? this.course.themeId);
     this.simulationConfig = {
       ...defaultSimulationConfig,
+      drone: {
+        ...defaultSimulationConfig.drone,
+        maxSpeedMetersPerSecond:
+          options.maxSpeedMetersPerSecond ??
+          defaultSimulationConfig.drone.maxSpeedMetersPerSecond,
+      },
       hoverAssistEnabled:
         options.hoverAssistEnabled ?? defaultSimulationConfig.hoverAssistEnabled,
     };
@@ -282,6 +289,28 @@ export class GameEngine {
     this.simulationConfig = {
       ...this.simulationConfig,
       hoverAssistEnabled: enabled,
+    };
+    this.emitSnapshot(true);
+  }
+
+  setMaxSpeedMetersPerSecond(value: number): void {
+    const maxSpeedMetersPerSecond = Number.isFinite(value)
+      ? Math.max(0, value)
+      : defaultSimulationConfig.drone.maxSpeedMetersPerSecond;
+
+    if (
+      this.simulationConfig.drone.maxSpeedMetersPerSecond ===
+      maxSpeedMetersPerSecond
+    ) {
+      return;
+    }
+
+    this.simulationConfig = {
+      ...this.simulationConfig,
+      drone: {
+        ...this.simulationConfig.drone,
+        maxSpeedMetersPerSecond,
+      },
     };
     this.emitSnapshot(true);
   }

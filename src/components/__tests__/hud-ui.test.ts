@@ -36,6 +36,8 @@ function result(overrides: Partial<RaceResult> = {}): RaceResult {
     courseId: "training-arena-01",
     courseVersion: "2026.06",
     themeId: "clean-sim",
+    hoverAssistEnabled: true,
+    maxSpeedMetersPerSecond: 12,
     elapsedMs: 60_000,
     penaltyMs: 1_000,
     finalMs: 61_000,

@@ -248,6 +248,22 @@ describe("drone flight simulation", () => {
     expect(finalSpeed).toBeLessThan(12);
   });
 
+  it("caps drone velocity to the configured maximum speed", () => {
+    const state = {
+      ...createDroneFlightState([0, 8, 0]),
+      velocity: [20, 0, 0] as Vector3Tuple,
+    };
+    const capped = stepFlight(
+      state,
+      command({ pitch: 1 }),
+      configWithDrone({ maxSpeedMetersPerSecond: 6 }),
+      0.25,
+      0,
+    );
+
+    expect(magnitude(capped.velocity)).toBeLessThanOrEqual(6);
+  });
+
   it("damps angular velocity and auto-levels pitch and roll when input is neutral", () => {
     const initial = createDroneFlightState([0, 4, 0], [0.35, 0.4, -0.3]);
     const disturbed = stepFlight(
