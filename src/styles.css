@@ -343,7 +343,27 @@ button {
   background: rgba(255, 255, 255, 0.07);
 }
 
+.score-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--hud-panel-border, #ffffff) 52%, transparent);
+  border-radius: 6px;
+  color: var(--hud-muted, #b7c0d4);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .range-row span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.score-input-row span {
   display: grid;
   min-width: 0;
   gap: 3px;
@@ -353,7 +373,17 @@ button {
   font-size: 0.86rem;
 }
 
+.score-input-row strong {
+  color: var(--hud-fg, #fff);
+  font-size: 0.86rem;
+}
+
 .range-row small {
+  color: var(--hud-muted, #b7c0d4);
+  font-size: 0.74rem;
+}
+
+.score-input-row small {
   color: var(--hud-muted, #b7c0d4);
   font-size: 0.74rem;
 }
@@ -364,6 +394,7 @@ button {
 }
 
 .range-row input[type="number"],
+.score-input-row input,
 .profile-grid input {
   width: 100%;
   min-width: 0;
@@ -702,6 +733,10 @@ button {
   }
 
   .range-row {
+    grid-template-columns: 1fr;
+  }
+
+  .score-input-row {
     grid-template-columns: 1fr;
   }
 

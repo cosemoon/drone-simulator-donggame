@@ -1,10 +1,13 @@
 import { Play, RotateCcw } from "lucide-react";
 import type { GameSnapshot } from "../game/engine";
 import {
+  MAX_ACCELERATION_METERS_PER_SECOND_SQUARED,
   MAX_MAX_SPEED_METERS_PER_SECOND,
+  MIN_ACCELERATION_METERS_PER_SECOND_SQUARED,
   MIN_MAX_SPEED_METERS_PER_SECOND,
 } from "../game/storage";
-import type { CameraMode, ThemeId } from "../game/types";
+import type { CameraMode, PlayerProfile, ThemeId } from "../game/types";
+import { ScoreSubmitPanel } from "./ScoreSubmitPanel";
 
 export interface PauseMenuProps {
   open: boolean;
@@ -13,10 +16,23 @@ export interface PauseMenuProps {
   cameraMode: CameraMode;
   hoverAssistEnabled: boolean;
   maxSpeedMetersPerSecond: number;
+  accelerationMetersPerSecondSquared: number;
+  playerProfile: PlayerProfile;
+  scoreValue: string;
+  submissionStage: string;
+  onlineSubmit: {
+    status: "idle" | "submitting" | "success" | "error";
+    message: string;
+  };
+  scoreboardEnabled: boolean;
   onThemeChange: (themeId: ThemeId) => void;
   onCameraModeChange: (cameraMode: CameraMode) => void;
   onHoverAssistChange: (enabled: boolean) => void;
   onMaxSpeedChange: (value: number) => void;
+  onAccelerationChange: (value: number) => void;
+  onPlayerProfileChange: (profile: PlayerProfile) => void;
+  onScoreChange: (value: string) => void;
+  onSubmitScore: () => void | Promise<void>;
   onResume: () => void;
   onRestart: () => void;
 }
@@ -43,10 +59,20 @@ export function PauseMenu({
   cameraMode,
   hoverAssistEnabled,
   maxSpeedMetersPerSecond,
+  accelerationMetersPerSecondSquared,
+  playerProfile,
+  scoreValue,
+  submissionStage,
+  onlineSubmit,
+  scoreboardEnabled,
   onThemeChange,
   onCameraModeChange,
   onHoverAssistChange,
   onMaxSpeedChange,
+  onAccelerationChange,
+  onPlayerProfileChange,
+  onScoreChange,
+  onSubmitScore,
   onResume,
   onRestart,
 }: PauseMenuProps) {
@@ -55,6 +81,8 @@ export function PauseMenu({
   }
 
   const roundedMaxSpeed = Math.round(maxSpeedMetersPerSecond);
+  const roundedAcceleration =
+    Math.round(accelerationMetersPerSecondSquared * 10) / 10;
 
   return (
     <div className="menu-scrim" role="presentation">
@@ -145,7 +173,49 @@ export function PauseMenu({
               onChange={(event) => onMaxSpeedChange(Number(event.currentTarget.value))}
             />
           </label>
+          <label className="range-row">
+            <span>
+              <strong>가속도</strong>
+              <small>{roundedAcceleration.toFixed(1)} m/s²</small>
+            </span>
+            <input
+              type="range"
+              min={MIN_ACCELERATION_METERS_PER_SECOND_SQUARED}
+              max={MAX_ACCELERATION_METERS_PER_SECOND_SQUARED}
+              step="0.1"
+              value={roundedAcceleration}
+              onChange={(event) =>
+                onAccelerationChange(Number(event.currentTarget.value))
+              }
+            />
+            <input
+              type="number"
+              min={MIN_ACCELERATION_METERS_PER_SECOND_SQUARED}
+              max={MAX_ACCELERATION_METERS_PER_SECOND_SQUARED}
+              step="0.1"
+              value={roundedAcceleration}
+              aria-label="가속도"
+              onChange={(event) =>
+                onAccelerationChange(Number(event.currentTarget.value))
+              }
+            />
+          </label>
         </fieldset>
+
+        <ScoreSubmitPanel
+          title="온라인 점수 제출"
+          stage={submissionStage}
+          hoverMode={hoverAssistEnabled}
+          scoreValue={scoreValue}
+          playerProfile={playerProfile}
+          onlineSubmit={onlineSubmit}
+          scoreboardEnabled={scoreboardEnabled}
+          helperText="완주하지 않아도 원하는 점수를 제출할 수 있습니다."
+          submitLabel="점수 제출"
+          onPlayerProfileChange={onPlayerProfileChange}
+          onScoreChange={onScoreChange}
+          onSubmitScore={onSubmitScore}
+        />
 
         <div className="menu-actions">
           <button type="button" className="primary-button" onClick={onResume}>

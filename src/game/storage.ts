@@ -12,6 +12,7 @@ export interface GameSettings {
   cameraMode: CameraMode;
   hoverAssistEnabled: boolean;
   maxSpeedMetersPerSecond: number;
+  accelerationMetersPerSecondSquared: number;
   touchControlsEnabled: boolean;
   reducedMotion: boolean;
 }
@@ -30,6 +31,9 @@ export const DEFAULT_NICKNAME = "Pilot";
 export const DEFAULT_MAX_SPEED_METERS_PER_SECOND = 12;
 export const MIN_MAX_SPEED_METERS_PER_SECOND = 4;
 export const MAX_MAX_SPEED_METERS_PER_SECOND = 18;
+export const DEFAULT_ACCELERATION_METERS_PER_SECOND_SQUARED = 5.6;
+export const MIN_ACCELERATION_METERS_PER_SECOND_SQUARED = 2;
+export const MAX_ACCELERATION_METERS_PER_SECOND_SQUARED = 12;
 
 export const DEFAULT_PLAYER_PROFILE: PlayerProfile = {
   school: "",
@@ -44,6 +48,8 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   cameraMode: "chase",
   hoverAssistEnabled: true,
   maxSpeedMetersPerSecond: DEFAULT_MAX_SPEED_METERS_PER_SECOND,
+  accelerationMetersPerSecondSquared:
+    DEFAULT_ACCELERATION_METERS_PER_SECOND_SQUARED,
   touchControlsEnabled: true,
   reducedMotion: false,
 };
@@ -227,6 +233,24 @@ export function sanitizeMaxSpeed(value: unknown): number {
   );
 }
 
+export function sanitizeAcceleration(value: unknown): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_ACCELERATION_METERS_PER_SECOND_SQUARED;
+  }
+
+  return Math.min(
+    MAX_ACCELERATION_METERS_PER_SECOND_SQUARED,
+    Math.max(MIN_ACCELERATION_METERS_PER_SECOND_SQUARED, parsed),
+  );
+}
+
 export function sanitizePlayerProfile(value: unknown): PlayerProfile {
   if (!isRecord(value)) {
     return { ...DEFAULT_PLAYER_PROFILE };
@@ -271,6 +295,9 @@ export function sanitizeSettings(value: unknown): GameSettings {
         ? value.hoverAssistEnabled
         : DEFAULT_GAME_SETTINGS.hoverAssistEnabled,
     maxSpeedMetersPerSecond: sanitizeMaxSpeed(value.maxSpeedMetersPerSecond),
+    accelerationMetersPerSecondSquared: sanitizeAcceleration(
+      value.accelerationMetersPerSecondSquared,
+    ),
     touchControlsEnabled:
       typeof value.touchControlsEnabled === "boolean"
         ? value.touchControlsEnabled

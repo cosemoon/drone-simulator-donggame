@@ -12,9 +12,17 @@ export interface OnlineScorePayload {
   score: number;
 }
 
+export interface ManualOnlineScoreInput {
+  stage: string | number;
+  hoverMode: boolean;
+  score: string | number;
+}
+
 export interface OnlineScoreResponse {
   success: boolean;
   updated: boolean;
+  accepted?: boolean;
+  retryAfterSeconds?: number;
   item?: unknown;
   error?: string;
 }
@@ -32,6 +40,22 @@ export function clearTimeMsToScore(clearTimeMs: number): number {
   return Math.max(0, MAX_SCORE - safeTime);
 }
 
+export function scoreToClearTimeMs(score: number): number {
+  const safeScore = Number.isFinite(score)
+    ? Math.min(MAX_SCORE, Math.max(0, Math.round(score)))
+    : 0;
+
+  return MAX_SCORE - safeScore;
+}
+
+export function courseIdToStageNumber(courseId: string): string {
+  const matches = courseId.match(/\d+/g);
+  const lastNumber = matches ? matches[matches.length - 1] : undefined;
+  const parsed = Number.parseInt(lastNumber ?? "1", 10);
+
+  return Number.isInteger(parsed) && parsed > 0 ? String(parsed) : "1";
+}
+
 function parsePositiveInt(value: string, fieldName: string): number {
   const parsed = Number.parseInt(value, 10);
 
@@ -42,19 +66,37 @@ function parsePositiveInt(value: string, fieldName: string): number {
   return parsed;
 }
 
-export function createOnlineScorePayload(
-  profile: PlayerProfile,
-  result: RaceResult,
-): OnlineScorePayload {
+function parseNaturalStage(value: string | number): string {
+  const parsed =
+    typeof value === "number" ? value : Number.parseInt(String(value), 10);
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error("스테이지는 1 이상의 자연수여야 합니다.");
+  }
+
+  return String(parsed);
+}
+
+function parseScore(value: string | number): number {
+  const parsed = typeof value === "number" ? value : Number(String(value).trim());
+
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > MAX_SCORE) {
+    throw new Error("점수는 0부터 999999까지의 정수여야 합니다.");
+  }
+
+  return parsed;
+}
+
+function normalizedProfile(profile: PlayerProfile) {
   const school = profile.school.trim();
   const nickname = profile.nickname.trim();
 
   if (school.length < 2) {
-    throw new Error("학교 이름을 2자 이상 입력해 주세요.");
+    throw new Error("학교 이름을 2글자 이상 입력해 주세요.");
   }
 
   if (nickname.length < 2) {
-    throw new Error("닉네임을 2자 이상 입력해 주세요.");
+    throw new Error("닉네임을 2글자 이상 입력해 주세요.");
   }
 
   return {
@@ -63,11 +105,34 @@ export function createOnlineScorePayload(
     classNumber: parsePositiveInt(profile.classNumber, "반"),
     studentNumber: parsePositiveInt(profile.studentNumber, "번호"),
     nickname,
-    stage: result.courseId,
-    hoverMode: result.hoverAssistEnabled,
-    clearTimeMs: Math.max(0, Math.round(result.finalMs)),
-    score: clearTimeMsToScore(result.finalMs),
   };
+}
+
+export function createManualOnlineScorePayload(
+  profile: PlayerProfile,
+  input: ManualOnlineScoreInput,
+): OnlineScorePayload {
+  const normalized = normalizedProfile(profile);
+  const score = parseScore(input.score);
+
+  return {
+    ...normalized,
+    stage: parseNaturalStage(input.stage),
+    hoverMode: input.hoverMode,
+    clearTimeMs: scoreToClearTimeMs(score),
+    score,
+  };
+}
+
+export function createOnlineScorePayload(
+  profile: PlayerProfile,
+  result: RaceResult,
+): OnlineScorePayload {
+  return createManualOnlineScorePayload(profile, {
+    stage: courseIdToStageNumber(result.courseId),
+    hoverMode: result.hoverAssistEnabled,
+    score: clearTimeMsToScore(result.finalMs),
+  });
 }
 
 export function normalizeScoreboardBaseUrl(value: string | undefined): string | null {

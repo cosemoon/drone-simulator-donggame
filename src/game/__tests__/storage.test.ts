@@ -3,6 +3,7 @@ import {
   DEFAULT_GAME_SETTINGS,
   DEFAULT_NICKNAME,
   STORAGE_KEYS,
+  sanitizeAcceleration,
   createGameStorage,
   createMemoryStorage,
   createStorageAdapter,
@@ -70,6 +71,7 @@ describe("createGameStorage", () => {
         touchControlsEnabled: "yes",
         hoverAssistEnabled: false,
         maxSpeedMetersPerSecond: 10,
+        accelerationMetersPerSecondSquared: 8,
         reducedMotion: true,
       }),
     });
@@ -80,8 +82,18 @@ describe("createGameStorage", () => {
       themeId: "neon-night",
       hoverAssistEnabled: false,
       maxSpeedMetersPerSecond: 10,
+      accelerationMetersPerSecondSquared: 8,
       reducedMotion: true,
     });
+  });
+
+  it("sanitizes acceleration settings to the playable range", () => {
+    expect(sanitizeAcceleration(8.5)).toBe(8.5);
+    expect(sanitizeAcceleration("999")).toBe(12);
+    expect(sanitizeAcceleration("-1")).toBe(2);
+    expect(sanitizeAcceleration("fast")).toBe(
+      DEFAULT_GAME_SETTINGS.accelerationMetersPerSecondSquared,
+    );
   });
 
   it("persists a sanitized player profile for online score submission", () => {

@@ -16,11 +16,14 @@ import {
   type LocalLeaderboard,
 } from "./game/leaderboard";
 import {
-  createOnlineScorePayload,
+  clearTimeMsToScore,
+  courseIdToStageNumber,
+  createManualOnlineScorePayload,
   resolveScoreboardBaseUrl,
   submitOnlineScore,
 } from "./game/onlineScore";
 import {
+  sanitizeAcceleration,
   sanitizeMaxSpeed,
   createBrowserStorageAdapter,
   createGameStorage,
@@ -139,8 +142,13 @@ function App() {
   const [onlineSubmit, setOnlineSubmit] = useState<OnlineSubmitState>(
     initialOnlineSubmitState,
   );
+  const [scoreDraft, setScoreDraft] = useState("");
   const [records, setRecords] = useState<RaceResult[]>(() =>
     leaderboard.topResults(trainingArenaCourse.id, 5),
+  );
+  const submissionStage = useMemo(
+    () => courseIdToStageNumber(trainingArenaCourse.id),
+    [],
   );
 
   const rootStyle = useMemo(
@@ -166,8 +174,12 @@ function App() {
       controls?.setCameraMode(settings.cameraMode);
       controls?.setHoverAssistEnabled(settings.hoverAssistEnabled);
       controls?.setMaxSpeedMetersPerSecond(settings.maxSpeedMetersPerSecond);
+      controls?.setAccelerationMetersPerSecondSquared(
+        settings.accelerationMetersPerSecondSquared,
+      );
     },
     [
+      settings.accelerationMetersPerSecondSquared,
       settings.cameraMode,
       settings.hoverAssistEnabled,
       settings.maxSpeedMetersPerSecond,
@@ -199,6 +211,7 @@ function App() {
         const nextRecords = leaderboard.addResult(result).slice(0, 5);
         setLatestResult(result);
         setRecords(nextRecords);
+        setScoreDraft(String(clearTimeMsToScore(result.finalMs)));
         setOnlineSubmit(initialOnlineSubmitState);
         setPauseMenuOpen(false);
       }
@@ -229,8 +242,9 @@ function App() {
 
   const openPauseMenu = useCallback(() => {
     controlsRef.current?.pause();
+    setScoreDraft(String(clearTimeMsToScore(snapshot?.finalMs ?? 0)));
     setPauseMenuOpen(true);
-  }, []);
+  }, [snapshot?.finalMs]);
 
   const resumeGame = useCallback(() => {
     setPauseMenuOpen(false);
@@ -240,6 +254,7 @@ function App() {
   const restartGame = useCallback(() => {
     setPauseMenuOpen(false);
     setLatestResult(null);
+    setScoreDraft("");
     setOnlineSubmit(initialOnlineSubmitState);
     previousStatusRef.current = null;
     controlsRef.current?.restart();
@@ -283,6 +298,15 @@ function App() {
     [updateSettings],
   );
 
+  const changeAcceleration = useCallback(
+    (accelerationMetersPerSecondSquared: number) => {
+      const sanitized = sanitizeAcceleration(accelerationMetersPerSecondSquared);
+      updateSettings({ accelerationMetersPerSecondSquared: sanitized });
+      controlsRef.current?.setAccelerationMetersPerSecondSquared(sanitized);
+    },
+    [updateSettings],
+  );
+
   const handlePlayerProfileChange = useCallback(
     (profile: PlayerProfile) => {
       setPlayerProfile(profile);
@@ -292,13 +316,13 @@ function App() {
     [gameStorage],
   );
 
-  const submitBestScore = useCallback(async () => {
-    const bestResult = records[0] ?? latestResult;
+  const submitScore = useCallback(async () => {
+    const hasScoreDraft = scoreDraft.trim().length > 0;
 
-    if (!bestResult) {
+    if (!hasScoreDraft) {
       setOnlineSubmit({
         status: "error",
-        message: "제출할 완주 기록이 없습니다.",
+        message: "제출할 점수를 입력해 주세요.",
       });
       return;
     }
@@ -312,14 +336,18 @@ function App() {
     }
 
     try {
-      const payload = createOnlineScorePayload(playerProfile, bestResult);
-      setOnlineSubmit({ status: "submitting", message: "최고 기록 제출 중..." });
+      const payload = createManualOnlineScorePayload(playerProfile, {
+        stage: submissionStage,
+        hoverMode: latestResult?.hoverAssistEnabled ?? settings.hoverAssistEnabled,
+        score: scoreDraft,
+      });
+      setOnlineSubmit({ status: "submitting", message: "점수 제출 중..." });
       const response = await submitOnlineScore(scoreboardBaseUrl, payload);
       setOnlineSubmit({
         status: "success",
         message: response.updated
-          ? "온라인 점수판에 최고 기록을 저장했습니다."
-          : "온라인 점수판의 기존 최고 기록이 더 좋습니다.",
+          ? "온라인 점수판에 점수를 저장했습니다."
+          : "제출은 완료됐지만 기존 최고 점수가 더 높습니다.",
       });
     } catch (error) {
       setOnlineSubmit({
@@ -330,7 +358,14 @@ function App() {
             : "온라인 점수 제출에 실패했습니다.",
       });
     }
-  }, [latestResult, playerProfile, records, scoreboardBaseUrl]);
+  }, [
+    latestResult,
+    playerProfile,
+    scoreboardBaseUrl,
+    scoreDraft,
+    settings.hoverAssistEnabled,
+    submissionStage,
+  ]);
 
   const inputBlocked = shouldBlockGameInput(pauseMenuOpen, snapshot?.status);
 
@@ -389,6 +424,9 @@ function App() {
         cameraMode={settings.cameraMode}
         hoverAssistEnabled={settings.hoverAssistEnabled}
         maxSpeedMetersPerSecond={settings.maxSpeedMetersPerSecond}
+        accelerationMetersPerSecondSquared={
+          settings.accelerationMetersPerSecondSquared
+        }
         inputBlocked={inputBlocked}
         onSnapshot={handleSnapshot}
         onControlsReady={handleControlsReady}
@@ -412,10 +450,22 @@ function App() {
         cameraMode={settings.cameraMode}
         hoverAssistEnabled={settings.hoverAssistEnabled}
         maxSpeedMetersPerSecond={settings.maxSpeedMetersPerSecond}
+        accelerationMetersPerSecondSquared={
+          settings.accelerationMetersPerSecondSquared
+        }
+        playerProfile={playerProfile}
+        scoreValue={scoreDraft}
+        submissionStage={submissionStage}
+        onlineSubmit={onlineSubmit}
+        scoreboardEnabled={Boolean(scoreboardBaseUrl)}
         onThemeChange={changeTheme}
         onCameraModeChange={changeCameraMode}
         onHoverAssistChange={changeHoverAssist}
         onMaxSpeedChange={changeMaxSpeed}
+        onAccelerationChange={changeAcceleration}
+        onPlayerProfileChange={handlePlayerProfileChange}
+        onScoreChange={setScoreDraft}
+        onSubmitScore={submitScore}
         onResume={resumeGame}
         onRestart={restartGame}
       />
@@ -424,10 +474,16 @@ function App() {
         result={latestResult}
         records={records}
         playerProfile={playerProfile}
+        scoreValue={scoreDraft}
+        submissionStage={submissionStage}
+        submissionHoverMode={
+          latestResult?.hoverAssistEnabled ?? settings.hoverAssistEnabled
+        }
         onlineSubmit={onlineSubmit}
         scoreboardEnabled={Boolean(scoreboardBaseUrl)}
         onPlayerProfileChange={handlePlayerProfileChange}
-        onSubmitBestScore={submitBestScore}
+        onScoreChange={setScoreDraft}
+        onSubmitScore={submitScore}
         onRestart={restartGame}
       />
     </main>

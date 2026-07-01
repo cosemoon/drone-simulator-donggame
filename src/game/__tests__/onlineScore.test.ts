@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   clearTimeMsToScore,
+  courseIdToStageNumber,
   createOnlineScorePayload,
+  createManualOnlineScorePayload,
   DEFAULT_SCOREBOARD_BASE_URL,
   normalizeScoreboardBaseUrl,
   resolveScoreboardBaseUrl,
+  scoreToClearTimeMs,
 } from "../onlineScore";
 import type { PlayerProfile, RaceResult } from "../types";
 
@@ -56,11 +59,42 @@ describe("online score helpers", () => {
       classNumber: 2,
       studentNumber: 14,
       nickname: "민준",
-      stage: "training-arena-01",
+      stage: "1",
       hoverMode: true,
       clearTimeMs: 61_250,
       score: 938_749,
     });
+  });
+
+  it("builds the public scoreboard payload from a manually entered score", () => {
+    expect(
+      createManualOnlineScorePayload(
+        profile({ school: "Sky School", nickname: "Pilot 7" }),
+        {
+          stage: "01",
+          hoverMode: false,
+          score: "123456",
+        },
+      ),
+    ).toEqual({
+      school: "Sky School",
+      grade: 5,
+      classNumber: 2,
+      studentNumber: 14,
+      nickname: "Pilot 7",
+      stage: "1",
+      hoverMode: false,
+      clearTimeMs: 876_543,
+      score: 123_456,
+    });
+  });
+
+  it("uses natural-number stage names for online submissions", () => {
+    expect(courseIdToStageNumber("training-arena-01")).toBe("1");
+    expect(courseIdToStageNumber("stage-12")).toBe("12");
+    expect(courseIdToStageNumber("custom")).toBe("1");
+    expect(scoreToClearTimeMs(999_999)).toBe(0);
+    expect(scoreToClearTimeMs(0)).toBe(999_999);
   });
 
   it("normalizes optional scoreboard URLs without leaking secrets into clients", () => {

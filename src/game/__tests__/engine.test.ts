@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  createRuntimeSimulationConfig,
   resolveCameraModeCommand,
   shouldPenalizeResetForStatus,
 } from "../engine";
@@ -25,5 +26,17 @@ describe("engine pure helpers", () => {
     expect(shouldPenalizeResetForStatus("paused")).toBe(false);
     expect(shouldPenalizeResetForStatus("finished")).toBe(false);
     expect(shouldPenalizeResetForStatus("aborted")).toBe(false);
+  });
+
+  it("maps speed and acceleration options into the runtime simulation config", () => {
+    const config = createRuntimeSimulationConfig({
+      hoverAssistEnabled: false,
+      maxSpeedMetersPerSecond: 7,
+      accelerationMetersPerSecondSquared: 9,
+    });
+
+    expect(config.hoverAssistEnabled).toBe(false);
+    expect(config.drone.maxSpeedMetersPerSecond).toBe(7);
+    expect(config.assist.horizontalControlAcceleration).toBe(9);
   });
 });

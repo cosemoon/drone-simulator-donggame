@@ -68,6 +68,7 @@ export interface GameEngineOptions {
   cameraMode?: CameraMode;
   hoverAssistEnabled?: boolean;
   maxSpeedMetersPerSecond?: number;
+  accelerationMetersPerSecondSquared?: number;
   snapshotIntervalMs?: number;
 }
 
@@ -114,6 +115,40 @@ export function shouldPenalizeResetForStatus(status: RaceStatus): boolean {
   return status === "running";
 }
 
+export function createRuntimeSimulationConfig(
+  options: Pick<
+    GameEngineOptions,
+    | "hoverAssistEnabled"
+    | "maxSpeedMetersPerSecond"
+    | "accelerationMetersPerSecondSquared"
+  > = {},
+): SimulationConfig {
+  const maxSpeedMetersPerSecond = Number.isFinite(
+    options.maxSpeedMetersPerSecond,
+  )
+    ? Math.max(0, options.maxSpeedMetersPerSecond as number)
+    : defaultSimulationConfig.drone.maxSpeedMetersPerSecond;
+  const accelerationMetersPerSecondSquared = Number.isFinite(
+    options.accelerationMetersPerSecondSquared,
+  )
+    ? Math.max(0, options.accelerationMetersPerSecondSquared as number)
+    : defaultSimulationConfig.assist.horizontalControlAcceleration;
+
+  return {
+    ...defaultSimulationConfig,
+    drone: {
+      ...defaultSimulationConfig.drone,
+      maxSpeedMetersPerSecond,
+    },
+    assist: {
+      ...defaultSimulationConfig.assist,
+      horizontalControlAcceleration: accelerationMetersPerSecondSquared,
+    },
+    hoverAssistEnabled:
+      options.hoverAssistEnabled ?? defaultSimulationConfig.hoverAssistEnabled,
+  };
+}
+
 export class GameEngine {
   private readonly container: HTMLElement;
   private readonly course: Course;
@@ -143,17 +178,7 @@ export class GameEngine {
     this.container = container;
     this.course = options.course ?? trainingArenaCourse;
     this.theme = activeThemeFor(options.themeId ?? this.course.themeId);
-    this.simulationConfig = {
-      ...defaultSimulationConfig,
-      drone: {
-        ...defaultSimulationConfig.drone,
-        maxSpeedMetersPerSecond:
-          options.maxSpeedMetersPerSecond ??
-          defaultSimulationConfig.drone.maxSpeedMetersPerSecond,
-      },
-      hoverAssistEnabled:
-        options.hoverAssistEnabled ?? defaultSimulationConfig.hoverAssistEnabled,
-    };
+    this.simulationConfig = createRuntimeSimulationConfig(options);
     this.snapshotIntervalMs = options.snapshotIntervalMs ?? SNAPSHOT_INTERVAL_MS;
     this.cameraMode = normalizeCameraMode(options.cameraMode ?? "chase");
     this.droneState = createDroneFlightState(
@@ -310,6 +335,28 @@ export class GameEngine {
       drone: {
         ...this.simulationConfig.drone,
         maxSpeedMetersPerSecond,
+      },
+    };
+    this.emitSnapshot(true);
+  }
+
+  setAccelerationMetersPerSecondSquared(value: number): void {
+    const accelerationMetersPerSecondSquared = Number.isFinite(value)
+      ? Math.max(0, value)
+      : defaultSimulationConfig.assist.horizontalControlAcceleration;
+
+    if (
+      this.simulationConfig.assist.horizontalControlAcceleration ===
+      accelerationMetersPerSecondSquared
+    ) {
+      return;
+    }
+
+    this.simulationConfig = {
+      ...this.simulationConfig,
+      assist: {
+        ...this.simulationConfig.assist,
+        horizontalControlAcceleration: accelerationMetersPerSecondSquared,
       },
     };
     this.emitSnapshot(true);
