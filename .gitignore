@@ -8,7 +8,3 @@ outputs/
 *.tsbuildinfo
 vite.config.d.ts
 vite.config.js
-leaderboard-v2/node_modules/
-leaderboard-v2/.wrangler/
-leaderboard-v2/.dev.vars
-leaderboard-v2/wrangler.toml
