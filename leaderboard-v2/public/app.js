@@ -29,6 +29,15 @@ function formatTime(value) {
   }).format(date);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function renderRows(items) {
   if (items.length === 0) {
     tbody.innerHTML = `
@@ -52,15 +61,6 @@ function renderRows(items) {
       `,
     )
     .join("");
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 async function loadLeaderboard() {
@@ -88,7 +88,10 @@ async function loadLeaderboard() {
     renderRows(items);
     setStatus(`총 ${items.length}개 기록 · 10초마다 자동 갱신`);
   } catch (error) {
-    setStatus("점수판을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.", "error");
+    setStatus(
+      "점수판을 불러오지 못했습니다. 잠시 뒤 다시 시도해 주세요.",
+      "error",
+    );
   }
 }
 

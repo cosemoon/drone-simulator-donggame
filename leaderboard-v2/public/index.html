@@ -14,7 +14,17 @@
             <p class="eyebrow">온라인 리더보드</p>
             <h1 id="page-title">교육용 게임 점수판</h1>
           </div>
-          <button id="refresh-button" type="button">새로고침</button>
+          <div class="heading-actions">
+            <a
+              class="secondary-link"
+              href="https://github.com/cosemoon/drone-simulator-donggame/archive/refs/heads/main.zip"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              시뮬레이터 다운로드
+            </a>
+            <button id="refresh-button" type="button">새로고침</button>
+          </div>
         </div>
 
         <div class="toolbar" aria-label="점수판 필터">
@@ -49,13 +59,33 @@
         </div>
       </section>
 
-      <section class="curl-card" aria-labelledby="curl-title">
-        <h2 id="curl-title">점수 제출 테스트</h2>
-        <p>운영용 비밀키는 브라우저에 넣지 말고 Cloudflare 환경 변수로만 관리하세요.</p>
-        <pre><code>curl -X POST https://YOUR_DOMAIN/api/submit-score \
-  -H "Authorization: Bearer YOUR_SECRET" \
-  -H "Content-Type: application/json" \
-  -d '{"nickname":"민준","school":"하늘초","score":8400}'</code></pre>
+      <section class="download-card" aria-labelledby="download-title">
+        <div>
+          <p class="eyebrow">다운로드 전용</p>
+          <h2 id="download-title">드론 시뮬레이션 프로그램</h2>
+          <p>
+            Cloudflare에는 온라인 점수판과 API만 배포합니다. 시뮬레이터는
+            GitHub에서 내려받아 로컬 컴퓨터에서 실행하세요.
+          </p>
+        </div>
+        <div class="download-actions">
+          <a
+            class="primary-link"
+            href="https://github.com/cosemoon/drone-simulator-donggame/archive/refs/heads/main.zip"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ZIP 다운로드
+          </a>
+          <a
+            class="ghost-link"
+            href="https://github.com/cosemoon/drone-simulator-donggame"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub 보기
+          </a>
+        </div>
       </section>
     </main>
     <script src="/app.js" type="module"></script>

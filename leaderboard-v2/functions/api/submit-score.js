@@ -1,17 +1,35 @@
 const MAX_BODY_BYTES = 4096;
 
+const JSON_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+  "cache-control": "no-store",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "no-referrer",
+};
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      "cache-control": "no-store",
-    },
+    headers: JSON_HEADERS,
   });
 }
 
 function unauthorized() {
   return json({ success: false, error: "unauthorized" }, 401);
+}
+
+function timingSafeEqual(left, right) {
+  const encoder = new TextEncoder();
+  const leftBytes = encoder.encode(left);
+  const rightBytes = encoder.encode(right);
+  const maxLength = Math.max(leftBytes.length, rightBytes.length);
+  let diff = leftBytes.length ^ rightBytes.length;
+
+  for (let index = 0; index < maxLength; index += 1) {
+    diff |= (leftBytes[index] ?? 0) ^ (rightBytes[index] ?? 0);
+  }
+
+  return diff === 0;
 }
 
 function isAuthorized(request, env) {
@@ -22,7 +40,12 @@ function isAuthorized(request, env) {
     return false;
   }
 
-  return header.slice("Bearer ".length).trim() === secret;
+  return timingSafeEqual(header.slice("Bearer ".length).trim(), secret);
+}
+
+function isJsonRequest(request) {
+  const type = request.headers.get("content-type") ?? "";
+  return type.toLowerCase().split(";")[0].trim() === "application/json";
 }
 
 function normalizeText(value, minLength, maxLength, fieldName) {
@@ -60,8 +83,14 @@ async function parseBody(request) {
     return { error: "request body is too large." };
   }
 
+  const bodyText = await request.text();
+
+  if (new TextEncoder().encode(bodyText).byteLength > MAX_BODY_BYTES) {
+    return { error: "request body is too large." };
+  }
+
   try {
-    return { value: await request.json() };
+    return { value: JSON.parse(bodyText) };
   } catch {
     return { error: "request body must be valid JSON." };
   }
@@ -74,6 +103,13 @@ export async function onRequest({ request, env }) {
 
   if (!isAuthorized(request, env)) {
     return unauthorized();
+  }
+
+  if (!isJsonRequest(request)) {
+    return json(
+      { success: false, error: "content-type must be application/json" },
+      415,
+    );
   }
 
   if (!env.DB) {

@@ -35,7 +35,7 @@ body {
 }
 
 .scoreboard,
-.curl-card {
+.download-card {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.9);
@@ -51,6 +51,14 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.heading-actions,
+.download-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .eyebrow {
@@ -87,6 +95,45 @@ button {
 
 button:hover {
   background: var(--accent-strong);
+}
+
+a {
+  color: inherit;
+}
+
+.primary-link,
+.secondary-link,
+.ghost-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primary-link,
+.secondary-link {
+  color: #ffffff;
+  background: var(--accent);
+}
+
+.primary-link:hover,
+.secondary-link:hover {
+  background: var(--accent-strong);
+}
+
+.ghost-link {
+  border: 1px solid var(--line);
+  color: var(--accent-strong);
+  background: #faffff;
+}
+
+.ghost-link:hover {
+  border-color: var(--accent);
+  background: #eef9fb;
 }
 
 .toolbar {
@@ -171,12 +218,16 @@ tbody tr:last-child td {
   text-align: center;
 }
 
-.curl-card {
+.download-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
   margin-top: 18px;
   padding: 18px;
 }
 
-.curl-card p {
+.download-card p {
   margin: 8px 0 12px;
   color: var(--muted);
 }
@@ -202,18 +253,28 @@ code {
   }
 
   .scoreboard,
-  .curl-card {
+  .download-card {
     padding: 14px;
   }
 
   .heading-row,
-  .toolbar {
+  .toolbar,
+  .download-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .heading-actions,
+  .download-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
   input,
-  button {
+  button,
+  .primary-link,
+  .secondary-link,
+  .ghost-link {
     width: 100%;
   }
 }
