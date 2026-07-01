@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Drone Time Attack">
+  <rect width="512" height="512" rx="96" fill="#05070d"/>
+  <circle cx="136" cy="136" r="72" fill="#1b9aaa" opacity="0.28"/>
+  <circle cx="376" cy="136" r="72" fill="#ffd166" opacity="0.28"/>
+  <circle cx="136" cy="376" r="72" fill="#ffd166" opacity="0.28"/>
+  <circle cx="376" cy="376" r="72" fill="#1b9aaa" opacity="0.28"/>
+  <circle cx="136" cy="136" r="42" fill="none" stroke="#8be0c9" stroke-width="18"/>
+  <circle cx="376" cy="136" r="42" fill="none" stroke="#ffe29a" stroke-width="18"/>
+  <circle cx="136" cy="376" r="42" fill="none" stroke="#ffe29a" stroke-width="18"/>
+  <circle cx="376" cy="376" r="42" fill="none" stroke="#8be0c9" stroke-width="18"/>
+  <path d="M136 136 L228 228 M376 136 L284 228 M136 376 L228 284 M376 376 L284 284" stroke="#dff9ff" stroke-width="22" stroke-linecap="round"/>
+  <rect x="202" y="202" width="108" height="108" rx="28" fill="#f5fbff"/>
+  <path d="M256 178 L286 238 H226 Z" fill="#1b9aaa"/>
+  <path d="M230 276 H282 L302 322 H210 Z" fill="#ffd166"/>
+</svg>
